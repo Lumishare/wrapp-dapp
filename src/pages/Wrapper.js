@@ -1,8 +1,8 @@
 import React from 'react';
 
-import About from '../components/About';
 import Banner from '../components/Banner';
-import HowToBuy from '../components/HowToBuy';
+import WrapperSection from '../components/WrapperSection';
+
 
 import {
   Box,
@@ -10,15 +10,11 @@ import {
 
 
 
-
-export default function PreSale() {
-
+export default function Wrapper() {
   return (
     <>
-    <About />
     <Box flex={false} align="center">
-      <Banner />
-      <HowToBuy />
+      <WrapperSection/>
     </Box>
     </>
   )

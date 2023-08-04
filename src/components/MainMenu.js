@@ -18,22 +18,31 @@ export default function MainMenu(props) {
   const size = React.useContext(ResponsiveContext);
 
   return (
-    <Header background="none" pad="small" height="xsmall" style={{
-      boxShadow: "0px 3px 6px #0000001A",
-    }}>
+    <Header background="#060707" pad="small">
       <Box width={size}>
-        <Anchor href="https://illumisrg.io/" size="small"target="_blank">
+        <Anchor href="https://lumishare.io/" target="_blank">
           <Image
             src={require("../assets/logo-2.png")}
             style={{maxWidth:"200px"}}
-            href="https://illumisrg.io/" target="_blank"
+            width={size}
+            href="https://lumishare.io/" target="_blank"
           />
         </Anchor>
       </Box>
-      <Nav align="center" width={size}>
+      <Nav align="center" >
       {
         !state.coinbase ?
-        <Button style={{borderRadius: "8px"}} primary size={size} label="Connect" color="#ffcc00" className="btn-primary" onClick={state.loadWeb3Modal}/> :
+        <Button
+          primary
+          size={size}
+          icon={
+            <Image src={require("../assets/icons/wallet.png")} fit="cover"/>
+          }
+          label={window.innerWidth >= 500 ? "Connect Your Wallet" : "Connect"}
+          color="#ffcc00"
+          className="btn-primary"
+          onClick={state.loadWeb3Modal}
+        /> :
         state.whitelisted ?
         <>
           <Text color="white" size="xsmall">Connected</Text>
@@ -41,8 +50,8 @@ export default function MainMenu(props) {
             window.innerWidth >= 500 &&
             <Text color="white" size="7px">{state.coinbase}</Text>
           }
-          <Text color="white" size="8px">Your SRG Balance</Text>
-          <Text color="white" size="8px">{Number(state.coinbaseBalance)/10**18} SRG</Text>
+          <Text color="white" size="8px">Your LUMI Balance</Text>
+          <Text color="white" size="8px">{Number(state.coinbaseBalance)/10**18} LUMI</Text>
         </> :
         <>
         {

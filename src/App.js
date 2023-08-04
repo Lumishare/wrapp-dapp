@@ -19,13 +19,12 @@ import { ChatBox } from '@orbisclub/modules'
 import "@orbisclub/modules/dist/index.modern.css";
 //import { User,Connect,Nodes,Help,Projects,Clock } from 'grommet-icons';
 
-
 import { AppContext, useAppState } from './hooks/useAppState'
 
 import useWeb3Modal from './hooks/useWeb3Modal'
 import useGraphClient from './hooks/useGraphClient';
 
-import Buy from './pages/PreSale';
+import Wrapper from './pages/Wrapper';
 
 import MainMenu from './components/MainMenu';
 import DappFooter from './components/DappFooter';
@@ -33,12 +32,17 @@ import DappFooter from './components/DappFooter';
 import abis from "./contracts/abis";
 import addresses from "./contracts/addresses";
 
+
+
+
+
 export default function App() {
 
   const { state, actions } = useAppState();
 
   const [srg, setSrg] = useState();
-  const [goldList, setGoldList] = useState();
+  const [srgV1, setSrgV1] = useState();
+  const [wrapper, setWrapper] = useState();
   const [stablecoins, setStablecoins] = useState();
 
 
@@ -49,27 +53,6 @@ export default function App() {
     loadWeb3Modal
   } = useWeb3Modal();
 
-  const {
-    client,
-    initiateClient,
-    getStablecoins
-  } = useGraphClient();
-
-
-  const getStablecoinsBalance = useCallback(async () => {
-    if (!stablecoins) return;
-
-    const stableCoinsList = stablecoins.map((stableCoin) => stableCoin.id);
-
-    let balance = 0;
-    for (const stablecoin of stableCoinsList) {
-      let erc20 = new ethers.Contract(stablecoin, abis.srg, provider);
-      balance += Number(ethers.utils.formatEther(await erc20.balanceOf(state.coinbase)));
-    }
-    return (balance);
-
-  }, [provider, stablecoins, state.coinbase])
-
 
   useEffect(() => {
     actions.setProvider(provider)
@@ -78,42 +61,17 @@ export default function App() {
     actions.setCoinbase(coinbase)
   }, [coinbase]);
 
-
-  useEffect(() => {
-    actions.setGetStablecoinsBalance(getStablecoinsBalance);
-  }, [getStablecoinsBalance])
-
-  useEffect(() => {
-    if (coinbase && goldList) {
-      const interval = setInterval(async () => {
-        const newWhitelisted = await goldList.goldList(coinbase);
-        actions.setWhitelisted(newWhitelisted);
-        if(newWhitelisted){
-          clearInterval(interval)
-        }
-      },10000);
-      goldList.goldList(coinbase).then(newWhitelisted => {
-        actions.setWhitelisted(newWhitelisted);
-        goldList.on("GoldListAddition", async (address, status) => {
-          if (coinbase.toLowerCase() === address.toLowerCase()) {
-            const newWhitelisted = await goldList.goldList(coinbase);
-            actions.setWhitelisted(newWhitelisted);
-          }
-        });
-      })
-    }
-  }, [coinbase, goldList]);
   useEffect(() => {
     if (coinbase && srg) {
       srg.balanceOf(coinbase).then(newBalance => {
-        actions.setCoinbaseBalance(newBalance);
+        actions.setCoinbaseBalance(newBalance.toString());
         srg.on("Transfer", async (from, to, value) => {
           if (
             from.toLowerCase() === coinbase.toLowerCase() ||
             to.toLowerCase() === coinbase.toLowerCase()
           ) {
             const newBalance = await srg.balanceOf(coinbase);
-            actions.setCoinbaseBalance(newBalance);
+            actions.setCoinbaseBalance(newBalance.toString());
           }
         });
       });
@@ -121,21 +79,21 @@ export default function App() {
   }, [coinbase, srg]);
 
   useEffect(() => {
-    if (goldList && srg) {
-      srg.balanceOf(goldList.address).then(newGoldListBalance => {
-        actions.setGoldListBalance(newGoldListBalance.toString());
-        srg.on("Transfer", async (from, to, value) => {
+    if (wrapper && coinbase) {
+      wrapper.balanceOf(coinbase).then(balance => {
+        actions.setWrapperBalance(balance.toString());
+        wrapper.on("Transfer", async (from, to, value) => {
           if (
-            from.toLowerCase() === goldList.address.toLowerCase() ||
-            to.toLowerCase() === goldList.address.toLowerCase()
+            from.toLowerCase() === coinbase.toLowerCase()
           ) {
-            const newGoldListBalance = await srg.balanceOf(goldList.address);
-            actions.setGoldListBalance(newGoldListBalance.toString());
+            const newWrapperBalance = await wrapper.balanceOf(coinbase);
+            actions.setWrapperBalance(newWrapperBalance.toString());
           }
         });
       });
     }
-  }, [goldList, srg]);
+  }, [wrapper, coinbase]);
+
   useEffect(() => {
     actions.setNetId(netId)
   }, [netId])
@@ -143,8 +101,8 @@ export default function App() {
     actions.setSrg(srg)
   }, [srg])
   useEffect(() => {
-    actions.setGoldList(goldList)
-  }, [goldList])
+    actions.setWrapper(wrapper)
+  }, [wrapper])
   useEffect(() => {
     actions.setLoadWeb3Modal(loadWeb3Modal)
   }, [loadWeb3Modal])
@@ -153,70 +111,40 @@ export default function App() {
     actions.setStablecoins(stablecoins)
   }, [stablecoins])
 
-
-  useEffect(() => {
-    initiateClient(netId);
-  }, [netId]);
   useEffect(() => {
     // Goerli
 
-    let newSrg, newGoldList, newColdStaking
-    if (netId === 5) {
-      newSrg = new ethers.Contract(addresses.srg.goerli, abis.srg, provider);
-      newGoldList = new ethers.Contract(addresses.goldList.goerli, abis.goldList, provider);
-    }
+    let newSrg, newWrapper;
     // Mumbai
     if (netId === 80001) {
       newSrg = new ethers.Contract(addresses.srg.mumbai, abis.srg, provider);
-      newGoldList = new ethers.Contract(addresses.goldList.mumbai, abis.goldList, provider);
-
+      newWrapper = new ethers.Contract(addresses.wrapper.mumbai, abis.wrapper, provider);
     }
-    if (netId === 97) {
-      newSrg = new ethers.Contract(addresses.srg.bsctestnet, abis.srg, provider);
-      newGoldList = new ethers.Contract(addresses.goldList.bsctestnet, abis.goldList, provider);
-      newColdStaking = new ethers.Contract(addresses.coldStaking.mumbai, abis.coldStaking, provider);
-    }
-
     if (netId === 56) {
       newSrg = new ethers.Contract(addresses.srg.bsc, abis.srg, provider);
-      newGoldList = new ethers.Contract(addresses.goldList.bsc, abis.goldList, provider);
-      newColdStaking = new ethers.Contract(addresses.coldStaking.mumbai, abis.coldStaking, provider);
-
+      newWrapper = new ethers.Contract(addresses.wrapper.bsc, abis.wrapper, provider);
+    }
+    if (netId === 11155111) {
+      newSrg = new ethers.Contract(addresses.srg.sepolia, abis.srg, provider);
+      newWrapper = new ethers.Contract(addresses.wrapper.sepolia, abis.wrapper, provider);
     }
     setSrg(newSrg);
-    setGoldList(newGoldList);
+    setWrapper(newWrapper);
   }, [netId]);
-  useMemo(async () => {
-    if (client && !stablecoins) {
-      const stablecoinsResult = await getStablecoins();
-      const newStablecoins = await Promise.all(
-        stablecoinsResult.data.stablecoins.map(async item => {
-          const contract = new ethers.Contract(item.id, abis.srg, provider);
-          const name = await contract.name();
-          const symbol = await contract.symbol();
-          return ({
-            id: item.id,
-            name: name,
-            symbol: symbol
-          });
-        })
-      );
-      setStablecoins(newStablecoins);
-    }
-  }, [client, stablecoins])
-
-
-
-  const getExpectedSrg = async (total) => {
-    const amount = await goldList.getAmountOfTokens(ethers.utils.parseEther(total).toString());
-    return (amount.toString() / 10 ** 18);
-  }
 
   return (
     <AppContext.Provider value={{ state, actions }} >
       <ThemeContext.Extend
         value={
           {
+            text: {
+              font: {
+                family: "'Exo 2'"
+              }
+            },
+            meter: {
+              color: "#FAC73F"
+            },
             anchor: {
               color: "#ffcc00"
             },
@@ -224,12 +152,17 @@ export default function App() {
               hover: {
                 color: "white"
               },
+              focus: {
+                border: {
+                  color: "none"
+                }
+              },
               colors: {
                 control: '#ffcc00'
               },
               font: {
                 weight: 600,
-                family: "Poppins"
+                family: "Exo 2"
               }
             },
             select: {
@@ -258,10 +191,10 @@ export default function App() {
             <ChatBox context="kjzl6cwe1jw14808eb8yfpg3g3olvhi4os1n089xyoji6jekrsit97xtxyo9t0z" poweredByOrbis="black" />
             */
           }
-          <Box className="coins-bg">
+          <Box>
             <MainMenu />
             {
-              netId !== 56 && //netId !== 80001 && //netId !== 137 && netId !== 5 && netId !== 56 &&
+              netId !== 56 && netId !== 11155111 && //netId !== 137 && netId !== 5 && netId !== 56 &&
               <Box align="center" >
                 <Layer background="status-error" responsive={false}>
                   <Box width="medium" pad="large">
@@ -270,10 +203,9 @@ export default function App() {
                 </Layer>
               </Box>
             }
-            <Box pad={{ top: "xxsmall", bottom: "large" }} flex={false}>
+            <Box pad={{ top: "xxsmall", bottom: "small" }} flex={false}>
               <Routes>
-                <Route path="/:uri" element={<Buy />} />
-                <Route path="/" element={<Buy />} />
+                <Route path="/" element={<Wrapper />} />
 
                 <Route render={() => {
 

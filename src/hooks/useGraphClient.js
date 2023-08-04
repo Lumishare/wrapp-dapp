@@ -39,10 +39,38 @@ function useGraphClient() {
     const results = await client.query({
       query: gql(tokensQuery)
     });
+    console.log(results)
+    return (results);
+  }
+  const getStakes = async (address) => {
+    let tokensQuery = `
+    query{
+      stakes(where: {stakerAddress: "${address.toLowerCase()}"}) {
+        id
+        stakeId
+        stakerAddress
+        amountStaked
+        finalReward
+        deadline
+        payed
+      }
+      stakers(where: {id: "${address.toLowerCase()}"}) {
+        id
+        address
+        totalStaked
+        totalPayed
+        total
+      }
+    }
+   `;
+    const results = await client.query({
+      query: gql(tokensQuery)
+    });
+    console.log(results)
     return (results);
   }
 
-  return ({ client, initiateClient, getStablecoins })
+  return ({ client, initiateClient, getStablecoins,getStakes })
 }
 
 export default useGraphClient;

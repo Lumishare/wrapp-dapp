@@ -1,11 +1,10 @@
 import srgAbi from "./abis/SrgAbi.json";
-import goldListAbi from "./abis/GoldListAbi.json";
+import wrapperAbi from "./abis/WrapperAbi.json";
 import coldStaking from "./abis/ColdStaking.json";
 
 const abis = {
   srg: srgAbi,
-  goldList: goldListAbi,
-  coldStaking: coldStaking
+  wrapper:wrapperAbi
 };
 
 export default abis;
